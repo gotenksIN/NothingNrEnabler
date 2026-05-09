@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 object QcomNvInfo {
-    private const val TAG = "MotoNrEnabler: QcomNvInfo"
+    private const val TAG = "NothingNrEnabler: QcomNvInfo"
     const val RDE_EFS_DSS_I = 10030
 
     interface NvDataType {

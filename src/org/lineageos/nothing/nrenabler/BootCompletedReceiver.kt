@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -17,6 +17,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        private const val TAG = "MotoNrEnabler"
+        private const val TAG = "NothingNrEnabler"
     }
 }

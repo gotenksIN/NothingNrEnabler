@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.util.Log
 import java.nio.ByteOrder
 
 object QcomOemConstants {
-    const val TAG = "MotoNrEnabler: QcomOemConstants"
+    const val TAG = "NothingNrEnabler: QcomOemConstants"
 
     private const val OEM_RIL_CDMA_MESSAGE_TYPE_CDMA = 33554432
     const val OEM_RIL_REQUEST_GET_NR_DISABLE_MODE = 327752

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -19,7 +19,7 @@ import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
 
 class NrEnablerService : Service() {
-    private lateinit var motoExtService: QcomMotoExtTelephonyService
+    private lateinit var nothingExtService: QcomNothingExtTelephonyService
     private val handler by lazy { Handler(mainLooper) }
     private val workingInProgress = AtomicBoolean(false)
 
@@ -46,7 +46,7 @@ class NrEnablerService : Service() {
         }
 
     override fun onCreate() {
-        motoExtService = QcomMotoExtTelephonyService(this)
+        nothingExtService = QcomNothingExtTelephonyService(this)
         registerReceiver(
             broadcastReceiver,
             IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED),
@@ -71,11 +71,11 @@ class NrEnablerService : Service() {
             // enable NR and DSS here because maintaining carrier config is
             // intractable for us.
             Log.v(TAG, "workOnNRModeAndDSS: setNrModeDisabled for phone ${phoneId}")
-            if (!motoExtService.setNrModeDisabled(phoneId, NrMode.AUTO)) {
+            if (!nothingExtService.setNrModeDisabled(phoneId, NrMode.AUTO)) {
                 return false
             }
             Log.v(TAG, "workOnNRModeAndDSS: setDSSEnabled for phone ${phoneId}")
-            if (!motoExtService.setDSSEnabled(phoneId, 1.toByte())) {
+            if (!nothingExtService.setDSSEnabled(phoneId, 1.toByte())) {
                 return false
             }
         }
@@ -91,6 +91,6 @@ class NrEnablerService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {
-        private const val TAG = "MotoNrEnabler"
+        private const val TAG = "NothingNrEnabler"
     }
 }

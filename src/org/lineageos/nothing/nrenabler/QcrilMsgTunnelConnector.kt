@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.content.ComponentName
 import android.content.Context
@@ -168,7 +168,7 @@ class QcrilMsgTunnelConnector(private val context: Context) {
     }
 
     companion object {
-        private const val TAG = "MotoNrEnabler: QcrilMsgTunnelConnector"
+        private const val TAG = "NothingNrEnabler: QcrilMsgTunnelConnector"
         private const val QCRIL_MSG_TUNNEL_PACKAGE_NAME = "com.qualcomm.qcrilmsgtunnel"
         private const val QCRIL_MSG_TUNNEL_SERVICE_NAME =
             "com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService"

@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.content.Context
 import android.util.Log
 import java.nio.ByteBuffer
 
-class QcomMotoExtTelephonyService(private val context: Context) {
+class QcomNothingExtTelephonyService(private val context: Context) {
     private val qcrilMsgTunnelConnector = QcrilMsgTunnelConnector(context)
 
     fun setNrModeDisabled(phoneId: Int, mode: NrMode): Boolean {
@@ -68,6 +68,6 @@ class QcomMotoExtTelephonyService(private val context: Context) {
     }
 
     companion object {
-        private const val TAG = "MotoNrEnabler: QcomMotoExtTelephonyService"
+        private const val TAG = "NothingNrEnabler: QcomNothingExtTelephonyService"
     }
 }

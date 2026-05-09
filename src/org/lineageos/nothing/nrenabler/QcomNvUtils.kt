@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.lineageos.motorola.nrenabler
+package org.lineageos.nothing.nrenabler
 
 import android.util.Log
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 
 object QcomNvUtils {
-    private const val TAG = "MotoNrEnabler: QcomNvUtils"
+    private const val TAG = "NothingNrEnabler: QcomNvUtils"
 
     private const val DEFAULT_SPC_CODE = "000000"
     private const val READING_RDE_RESP_BUF_SIZE = 6144
