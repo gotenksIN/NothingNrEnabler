@@ -7,7 +7,8 @@
     package="org.lineageos.nothing.nrenabler"
     android:sharedUserId="android.uid.phone">
 
-    <uses-permission android:name="com.qualcomm.permission.USE_QCRIL_MSG_TUNNEL" />
+    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
 
     <application
         android:label="NothingNrEnabler"

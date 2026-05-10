@@ -10,7 +10,10 @@ android_app {
         "src/**/*.aidl",
         "src/**/*.kt",
     ],
-    libs: ["telephony-common"],
+    libs: [
+        "extphonelib",
+        "telephony-common",
+    ],
 
     certificate: "platform",
     platform_apis: true,

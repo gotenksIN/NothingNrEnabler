@@ -7,67 +7,118 @@ package org.lineageos.nothing.nrenabler
 
 import android.content.Context
 import android.util.Log
-import java.nio.ByteBuffer
+import com.qti.extphone.Client
+import com.qti.extphone.ExtPhoneCallbackBase
+import com.qti.extphone.ExtTelephonyManager
+import com.qti.extphone.NrConfig
+import com.qti.extphone.ServiceCallback
+import com.qti.extphone.Status
+import com.qti.extphone.Token
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 class QcomNothingExtTelephonyService(private val context: Context) {
-    private val qcrilMsgTunnelConnector = QcrilMsgTunnelConnector(context)
+    private val extTelephonyManager = ExtTelephonyManager.getInstance(context)
+    private var client: Client? = null
+    private var pendingSetNrConfig: PendingSetNrConfig? = null
 
-    fun setNrModeDisabled(phoneId: Int, mode: NrMode): Boolean {
-        val nrModeInModem = getNrModeDisabled(phoneId)
-        Log.v(TAG, "nrModeInModem = $nrModeInModem")
-        if (mode == nrModeInModem) {
-            Log.d(
-                TAG,
-                "setNrModeDisabled equals nrModeInModem:$nrModeInModem, ignore set for phoneID:$phoneId",
+    private val serviceCallback =
+        object : ServiceCallback {
+            override fun onConnected() {
+                Log.d(TAG, "ExtTelephony service connected")
+                registerCallback()
+            }
+
+            override fun onDisconnected() {
+                Log.d(TAG, "ExtTelephony service disconnected")
+                client = null
+            }
+        }
+
+    private val extPhoneCallback =
+        object : ExtPhoneCallbackBase() {
+            override fun onSetNrConfig(slotId: Int, token: Token?, status: Status?) {
+                Log.d(TAG, "onSetNrConfig: slotId=$slotId token=$token status=$status")
+                val pending = pendingSetNrConfig ?: return
+                if (pending.token == token?.get()) {
+                    pending.future.complete(status ?: Status(Status.FAILURE))
+                }
+            }
+        }
+
+    init {
+        extTelephonyManager.connectService(serviceCallback)
+    }
+
+    fun setNrConfig(phoneId: Int): Boolean {
+        if (!ensureClient()) {
+            Log.e(TAG, "setNrConfig: ExtTelephony service not ready")
+            return false
+        }
+
+        val extPhoneClient = client ?: return false
+        val token =
+            extTelephonyManager.setNrConfig(
+                phoneId,
+                NrConfig(NrConfig.NR_CONFIG_COMBINED_SA_NSA),
+                extPhoneClient,
             )
+                ?: run {
+                    Log.e(TAG, "setNrConfig: null token for phone $phoneId")
+                    return false
+                }
+
+        val pending = PendingSetNrConfig(token.get(), CompletableFuture())
+        pendingSetNrConfig = pending
+        Log.d(TAG, "setNrConfig: token=$token phoneId=$phoneId")
+
+        return try {
+            val status = pending.future.get(SET_NR_CONFIG_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            Log.d(TAG, "setNrConfig: status=$status")
+            status.get() == Status.SUCCESS
+        } catch (e: Exception) {
+            Log.e(TAG, "setNrConfig failed", e)
+            false
+        } finally {
+            if (pendingSetNrConfig === pending) {
+                pendingSetNrConfig = null
+            }
+        }
+    }
+
+    fun destroy() {
+        if (client != null) {
+            extTelephonyManager.unRegisterCallback(extPhoneCallback)
+            client = null
+        }
+        extTelephonyManager.disconnectService(serviceCallback)
+    }
+
+    private fun ensureClient(): Boolean {
+        if (!extTelephonyManager.isServiceConnected) {
+            extTelephonyManager.connectService(serviceCallback)
+            return false
+        }
+        if (client != null) {
             return true
         }
-        val data = ByteArray(9)
-        val buf = ByteBuffer.wrap(data)
-        buf.order(
-            QcomOemConstants.getByteOrderByRequestId(
-                QcomOemConstants.OEM_RIL_REQUEST_SET_NR_DISABLE_MODE
-            )
-        )
-        buf.putInt(QcomOemConstants.OEM_RIL_REQUEST_SET_NR_DISABLE_MODE)
-            .putInt(1)
-            .put(mode.toInt().toByte())
-        return qcrilMsgTunnelConnector.invokeOemRilRequestRawForPhone(phoneId, data, null) >= 0
+        registerCallback()
+        return client != null
     }
 
-    private fun getNrModeDisabled(phoneId: Int): NrMode? {
-        val data = ByteArray(8)
-        val respData = ByteArray(1)
-        val buf = ByteBuffer.wrap(data)
-        buf.order(
-            QcomOemConstants.getByteOrderByRequestId(
-                QcomOemConstants.OEM_RIL_REQUEST_GET_NR_DISABLE_MODE
-            )
-        )
-        buf.putInt(QcomOemConstants.OEM_RIL_REQUEST_GET_NR_DISABLE_MODE)
-        if (qcrilMsgTunnelConnector.invokeOemRilRequestRawForPhone(phoneId, data, respData) >= 0) {
-            return NrMode.fromInt(respData[0].toInt())
-        }
-        return null
+    private fun registerCallback() {
+        if (client != null) return
+        client = extTelephonyManager.registerCallback(context.packageName, extPhoneCallback)
+        Log.d(TAG, "ExtTelephony client=$client")
     }
 
-    private fun getDSSEnabled(phoneId: Int): Byte {
-        val rdeNv =
-            qcrilMsgTunnelConnector.getRdeNvValueByElementId(phoneId, QcomNvInfo.RDE_EFS_DSS_I)
-        return (rdeNv?.dataObj as QcomNvInfo.NvGenericDataType?)?.data?.get(0) ?: 2.toByte()
-    }
-
-    fun setDSSEnabled(phoneId: Int, enabled: Byte): Boolean {
-        val prev = getDSSEnabled(phoneId)
-        Log.v(TAG, "previous DSS mode = $prev")
-        if (prev == enabled) {
-            Log.d(TAG, "Skip setDSSEnabled as no change.")
-            return true
-        }
-        return qcrilMsgTunnelConnector.setRdeNvValue(phoneId, QcomNvInfo.RDE_EFS_DSS_I, enabled)
-    }
+    private data class PendingSetNrConfig(
+        val token: Int,
+        val future: CompletableFuture<Status>,
+    )
 
     companion object {
         private const val TAG = "NothingNrEnabler: QcomNothingExtTelephonyService"
+        private const val SET_NR_CONFIG_TIMEOUT_MS = 2000L
     }
 }

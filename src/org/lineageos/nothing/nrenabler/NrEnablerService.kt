@@ -23,12 +23,12 @@ class NrEnablerService : Service() {
     private val handler by lazy { Handler(mainLooper) }
     private val workingInProgress = AtomicBoolean(false)
 
-    private val repeatWorkOnNRModeAndDSSIfFail =
+    private val repeatSetNrConfigIfFail =
         object : Runnable {
             override fun run() {
                 if (workingInProgress.getAndSet(true)) return
-                if (!workOnNRModeAndDSS()) {
-                    Log.v(TAG, "workOnNRModeAndDSS failed, retry after 5s")
+                if (!setNrConfig()) {
+                    Log.v(TAG, "setNrConfig failed, retry after 5s")
                     handler.removeCallbacks(this)
                     handler.postDelayed(this, 5000)
                 }
@@ -40,7 +40,7 @@ class NrEnablerService : Service() {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (!workingInProgress.get()) {
-                    handler.post(repeatWorkOnNRModeAndDSSIfFail)
+                    handler.post(repeatSetNrConfigIfFail)
                 }
             }
         }
@@ -51,13 +51,14 @@ class NrEnablerService : Service() {
             broadcastReceiver,
             IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED),
         )
+        handler.post(repeatSetNrConfigIfFail)
     }
 
-    private fun workOnNRModeAndDSS(): Boolean {
+    private fun setNrConfig(): Boolean {
         val activeSubs =
             getSystemService(SubscriptionManager::class.java)?.getActiveSubscriptionInfoList()
         if (activeSubs.isNullOrEmpty()) {
-            Log.v(TAG, "workOnNRModeAndDSS: no active sub.")
+            Log.v(TAG, "setNrConfig: no active sub.")
             return true
         }
         for (aSubInfo in activeSubs) {
@@ -67,15 +68,8 @@ class NrEnablerService : Service() {
                 return false
             }
 
-            // Moto sets them based on carrier config, but we unconditionally
-            // enable NR and DSS here because maintaining carrier config is
-            // intractable for us.
-            Log.v(TAG, "workOnNRModeAndDSS: setNrModeDisabled for phone ${phoneId}")
-            if (!nothingExtService.setNrModeDisabled(phoneId, NrMode.AUTO)) {
-                return false
-            }
-            Log.v(TAG, "workOnNRModeAndDSS: setDSSEnabled for phone ${phoneId}")
-            if (!nothingExtService.setDSSEnabled(phoneId, 1.toByte())) {
+            Log.v(TAG, "setNrConfig: enable SA/NSA for phone $phoneId")
+            if (!nothingExtService.setNrConfig(phoneId)) {
                 return false
             }
         }
@@ -89,6 +83,12 @@ class NrEnablerService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        unregisterReceiver(broadcastReceiver)
+        nothingExtService.destroy()
+        super.onDestroy()
+    }
 
     companion object {
         private const val TAG = "NothingNrEnabler"
