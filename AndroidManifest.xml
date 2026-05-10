@@ -9,19 +9,21 @@
 
     <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:label="NothingNrEnabler"
-        android:persistent="true"
         android:directBootAware="true">
         <service
-            android:name=".NrEnablerService" />
+            android:name=".NrEnablerService"
+            android:exported="false" />
 
         <receiver
             android:name=".BootCompletedReceiver"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.telephony.action.CARRIER_CONFIG_CHANGED" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
